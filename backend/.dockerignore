@@ -2,9 +2,14 @@
 venv/
 __pycache__/
 *.pyc
+*.pyo
 .env
 chroma_db/
+qdrant_db/
 outputs/
 workspace/
 .git/
 .DS_Store
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/

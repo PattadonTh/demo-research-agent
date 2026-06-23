@@ -1,4 +1,7 @@
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
+
+# Patch OS-level CVEs in the base image
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -10,6 +13,8 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 COPY . .
 
-RUN mkdir -p outputs workspace chroma_db
+RUN mkdir -p outputs
 
-ENTRYPOINT ["python", "main.py"]
+EXPOSE 8000
+ENV PORT=8000
+CMD ["sh", "-c", "uvicorn api:app --host 0.0.0.0 --port ${PORT}"]

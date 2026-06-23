@@ -15,7 +15,7 @@ outputs/
 workspace/
 
 # Vector DB
-chroma_db/
+qdrant_db/
 *.sqlite3
 
 # IDE

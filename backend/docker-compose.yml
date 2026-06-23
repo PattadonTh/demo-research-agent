@@ -1,8 +1,9 @@
 services:
-  agent:
+  api:
     build: .
     env_file: .env
+    ports:
+      - "8000:8000"
     volumes:
       - ./outputs:/app/outputs
-      - ./chroma_db:/app/chroma_db
-      - ./workspace:/app/workspace
+      - ./qdrant_db:/app/qdrant_db   # only used when QDRANT_URL is not set (local dev)

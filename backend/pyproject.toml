@@ -9,11 +9,13 @@ dependencies = [
     "langchain-core",
     "pydantic",
     "python-dotenv",
-    "chromadb",
+    "qdrant-client",
     "anthropic",
     "langchain-anthropic",
     "sentence-transformers",
     "langchain-community",
+    "fastapi",
+    "uvicorn[standard]",
 ]
 
 [tool.setuptools.packages.find]
