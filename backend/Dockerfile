@@ -3,8 +3,6 @@ FROM python:3.12-slim-bookworm
 # Patch OS-level CVEs in the base image
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
-    && apt-get remove --purge -y perl perl-base \
-    && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
