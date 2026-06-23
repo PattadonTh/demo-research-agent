@@ -6,22 +6,15 @@ def get_memory_store():
     Factory function — return the correct memory backend based on .env config.
 
     Set MEMORY_BACKEND in your .env to choose a backend:
-      MEMORY_BACKEND=chroma  (default) — local ChromaDB, no external service needed
+      MEMORY_BACKEND=qdrant  (default) — in-memory when no QDRANT_URL, cloud otherwise
 
-    ✏️  TODO: To add a new backend (e.g. Pinecone, Redis):
-      1. Create memory/backends/pinecone.py with a class extending BaseMemoryStore.
-      2. Add an elif branch below:
-           elif backend == "pinecone":
-               from .pinecone import PineconeMemoryStore
-               return PineconeMemoryStore()
-      3. Set MEMORY_BACKEND=pinecone in .env — no other code changes needed.
-
-    Imports are intentionally inside the if/elif so unused backend
-    dependencies don't need to be installed.
+    To add a new backend (e.g. Pinecone):
+      1. Create memory/backends/pinecone.py extending BaseMemoryStore.
+      2. Add an elif branch below and set MEMORY_BACKEND=pinecone in .env.
     """
-    backend = os.getenv("MEMORY_BACKEND", "chroma")
-    if backend == "chroma":
-        from .chroma import ChromaMemoryStore
+    backend = os.getenv("MEMORY_BACKEND", "qdrant")
+    if backend == "qdrant":
+        from .qdrant import QdrantMemoryStore
 
-        return ChromaMemoryStore()
+        return QdrantMemoryStore()
     raise ValueError(f"Unknown backend: {backend}")

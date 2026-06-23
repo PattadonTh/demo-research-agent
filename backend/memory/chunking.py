@@ -2,89 +2,48 @@ import uuid
 
 
 def make_id(topic: str, chunk_type: str, suffix: str = "") -> str:
-    """
-    Generate a deterministic, collision-resistant ID for a chunk.
-
-    The ID is built from topic + chunk_type + suffix so that re-saving the
-    same content produces the same ID.  This is intentional: ChromaDB's
-    upsert will overwrite the old embedding instead of creating a duplicate,
-    keeping the store clean across repeated runs.
-
-    The uuid5 suffix (DNS namespace) adds enough entropy to prevent accidental
-    collisions when different topics produce the same slug after lowercasing.
-    """
     base = f"{topic}::{chunk_type}::{suffix}".lower().replace(" ", "_")
     return base[:80] + "::" + str(uuid.uuid5(uuid.NAMESPACE_DNS, base))
 
 
-def chunk_text(
-    text: str,
-    topic: str,
-    chunk_type: str = "general",
-    # ✏️  TODO: Tune max_length to balance retrieval quality vs embedding cost.
-    #      Smaller chunks = more precise retrieval but more chunks to store.
-    #      Larger chunks = more context per result but noisier matches.
-    #      1500 chars ≈ ~300–400 tokens, a good default for most LLMs.
-    max_length: int = 1500,
-) -> list[dict]:
+def chunk_report(report, topic: str) -> list[dict]:
     """
-    Split plain text into paragraph-based chunks for vector storage.
+    Chunk an AgentOutput into one vector per semantic field for precise retrieval.
 
-    Strategy:
-      1. Split the text on double newlines (paragraph boundaries).
-      2. Accumulate paragraphs into a running buffer until adding the next one
-         would exceed max_length.
-      3. When the buffer is full, flush it as a chunk and start a new one.
-
-    Each chunk dict has the shape expected by the backend's upsert call:
-      id       — deterministic ID from make_id() (enables safe upsert/overwrite)
-      text     — "Topic: <topic>\\n<content>" (topic prefix helps retrieval quality)
-      metadata — topic, chunk_type, index (for filtering / debugging)
-
-    ✏️  TODO: Override this function if your AgentOutput has structured fields
-    (e.g. title, summary, code).  Create one chunk per field for precise retrieval:
-      return [
-          {"id": make_id(topic, "title", "0"), "text": f"Title: {result.title}", ...},
-          {"id": make_id(topic, "summary", "0"), "text": result.summary, ...},
-      ]
+    Splitting by field means a query like "what sources were used" hits the
+    sources chunk, not the whole JSON blob — retrieval quality is much better
+    than treating the report as a single flat string.
     """
     chunks = []
-    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 
-    current = ""
-    index = 0
+    def add(chunk_type: str, text: str):
+        if text.strip():
+            chunks.append({
+                "id": make_id(topic, chunk_type, "0"),
+                "text": f"Topic: {topic}\n{text.strip()}",
+                "metadata": {"topic": topic, "chunk_type": chunk_type, "index": 0},
+            })
 
-    for para in paragraphs:
-        if len(current) + len(para) > max_length and current:
-            # Buffer is full — flush as a chunk before starting a new one.
-            chunks.append(
-                {
-                    "id": make_id(topic, chunk_type, str(index)),
-                    "text": f"Topic: {topic}\n{current.strip()}",
-                    "metadata": {
-                        "topic": topic,
-                        "chunk_type": chunk_type,
-                        "index": index,
-                    },
-                }
-            )
-            current = para
-            index += 1
-        else:
-            current += "\n\n" + para if current else para
+    add("title", report.title)
+    add("summary", report.summary)
 
-    # Flush whatever remains in the buffer as the final chunk.
-    if current:
-        chunks.append(
-            {
-                "id": make_id(topic, chunk_type, str(index)),
-                "text": f"Topic: {topic}\n{current.strip()}",
-                "metadata": {
-                    "topic": topic,
-                    "chunk_type": chunk_type,
-                    "index": index,
-                },
-            }
+    if report.key_findings:
+        add("key_findings", "\n".join(f"- {f}" for f in report.key_findings))
+
+    for section_name, content in (report.sections or {}).items():
+        chunks.append({
+            "id": make_id(topic, "section", section_name),
+            "text": f"Topic: {topic}\nSection — {section_name}:\n{content.strip()}",
+            "metadata": {"topic": topic, "chunk_type": "section", "index": section_name},
+        })
+
+    if report.sources:
+        sources_text = "\n".join(
+            f"- [{s.relevance}] {s.title} {s.url}" for s in report.sources
         )
+        add("sources", sources_text)
+
+    if report.limitations:
+        add("limitations", report.limitations)
 
     return chunks

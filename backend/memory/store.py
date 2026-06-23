@@ -18,13 +18,10 @@ class BaseMemoryStore(ABC):
     """
 
     @abstractmethod
-    def save(self, text: str, topic: str, chunk_type: str = "general") -> int:
+    def save(self, report, topic: str) -> int:
         """
-        Chunk, embed, and store `text` tagged with `topic`.
-
-        Returns the number of chunks that were written.
-        chunk_type is a free-form label (e.g. "general", "code", "summary")
-        stored in metadata so you can filter by it later if needed.
+        Chunk an AgentOutput report by field, embed each chunk, and store.
+        Returns the number of chunks written.
         """
         pass
 
