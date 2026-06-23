@@ -15,14 +15,15 @@ from datetime import datetime
 from typing import Optional
 
 from dotenv import load_dotenv
+
+load_dotenv()  # must run before LangChain imports so LangSmith tracing env vars are set
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from agent import AgentOutput
 from main import build_graph, _init_state
-
-load_dotenv()
 
 app = FastAPI(title="Research Agent API", version="1.0.0")
 
