@@ -1,0 +1,6 @@
+# macOS
+.DS_Store
+
+# IDE — keep .vscode/settings.json (interpreter path), ignore personal overrides
+.vscode/*.code-snippets
+.vscode/launch.json
